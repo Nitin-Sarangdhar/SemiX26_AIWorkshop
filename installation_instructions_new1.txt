@@ -1,0 +1,35 @@
+Write-Host "--- FIDO AIPC SETUP (8GB RAM OPTIMIZED) ---" -ForegroundColor Cyan
+
+# 1. Environment Initialization
+Write-Host "[1/6] Creating Virtual Environment..." -ForegroundColor Yellow
+python -m venv fido_env
+. .\fido_env\Scripts\Activate.ps1
+python -m pip install --upgrade pip setuptools wheel
+
+# 2. Core AI Stack (2026.1 Release)
+Write-Host "[2/6] Installing OpenVINO GenAI & Ultralytics..." -ForegroundColor Yellow
+python -m pip install "openvino>=2026.1.0" "openvino-genai>=2026.1.0"
+python -m pip install ultralytics --no-cache-dir
+
+# 3. Hardware Interfacing & Logic
+Write-Host "[3/6] Installing NPU Handlers & Audio Libraries..." -ForegroundColor Yellow
+# 'optimum-intel' is mandatory for NPU device detection
+python -m pip install "optimum-intel[openvino]" sounddevice scipy opencv-python
+
+# 4. VISION SETUP (YOLOv8)
+# Automatically downloads weights and exports to OpenVINO folder
+Write-Host "[4/6] Exporting YOLOv8 Vision Model..." -ForegroundColor Yellow
+yolo export model=yolov8n.pt format=openvino
+
+# 5. COGNITION SETUP (Phi-3)
+# Downloads and compresses the 'Brain' to 8-bit to save RAM
+Write-Host "[5/6] Exporting Phi-3 Brain to INT8..." -ForegroundColor Yellow
+optimum-cli export openvino --model microsoft/Phi-3-mini-4k-instruct --task text-generation-with-past --weight-format int8 phi3_openvino_int8/
+
+# 6. PERCEPTION SETUP (Whisper)
+# Downloads official Intel-built Whisper for GenAI compatibility (Fixes beam_idx error)
+Write-Host "[6/6] Downloading Official Whisper-Tiny for NPU..." -ForegroundColor Yellow
+huggingface-cli download OpenVINO/whisper-tiny-fp16-ov --local-dir whisper-tiny-ov
+
+Write-Host "--- SETUP COMPLETE ---" -ForegroundColor Green
+Write-Host "You can now run 'python multimodal10.py' or 'python brain_int8.py'" -ForegroundColor White

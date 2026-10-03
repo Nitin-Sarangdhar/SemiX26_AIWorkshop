@@ -1,0 +1,19 @@
+# Python environments and caches
+.venv/
+venv/
+fido_env/
+__pycache__/
+*.pyc
+
+# Models - downloaded / exported locally by the installation steps (several GB, not versioned)
+*.pt
+yolov8n_openvino_model/
+phi3_openvino_int8/
+whisper-*-ov/
+param-1-local/
+param-1-ov-int4/
+ov_cache/
+
+# Files written at runtime
+fido_senses.json
+fido_vision_*.jpg
