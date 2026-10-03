@@ -11,27 +11,55 @@ Each version is a tagged commit - browse older ones under **Tags** (or `git chec
 | Tag | Main program | What changed |
 |---|---|---|
 | v1.0 | `multimodal10.py` + `brain_Int8.py` | Original code |
-| **v2.0** (this) | `multimodal10_updated.py` | One program: continuous camera + YOLO, Silero voice detection, Whisper-medium, Phi-3 decides using recently seen objects, task queue |
+| v2.0 | `multimodal10_updated.py` | One program: continuous camera + YOLO, Silero voice detection, Whisper-medium, Phi-3 decides using recently seen objects |
+| **v3.0** (this) | `fido_mk2.py` | Param-1 (2.9B, INT4) replaces Phi-3, live HUD, simulated motors and fetch missions |
 
-## Version 2.0
+## Version 3.0 - FIDO Mk2
 
 | File | Purpose |
 |---|---|
-| `installation_instructions_new1.txt` | PowerShell setup script, updated for v2: adds PyTorch (Silero VAD) and exports Whisper-medium instead of Whisper-tiny |
-| `multimodal10_updated.py` | Speech (Whisper-medium + Silero VAD), live camera with YOLOv8n, 30-second object memory, Phi-3-mini (INT8) picks the object for a fetch request |
+| `steps.txt` | Installation and run instructions |
+| `requirements.txt` | Pinned Python packages |
+| `export.py` | Downloads `bharatgenai/Param-1-2.9B-Instruct` and exports it to OpenVINO INT4 (`param-1-ov-int4/`) |
+| `test.py` | Quick check that the exported Param-1 model loads and answers |
+| `fido_mk2.py` | FIDO with a live HUD window |
 
-### Setup
+**How FIDO Mk2 works**
 
-Run the commands in `installation_instructions_new1.txt` in PowerShell, from the repository folder.
-The first run of `multimodal10_updated.py` downloads Silero VAD, so it needs internet.
+- **Speech:** Whisper-base + Silero VAD. Every command must start with "fido".
+- **Vision:** YOLOv8n on the camera feed; FIDO only considers objects detected in the last second.
+- **Decision:** the spoken sentence (verbatim) and the list of objects in view go to Param-1, which
+  replies with the object to fetch, or "none". There are no keyword rules for choosing objects.
+- **Motion (simulated):** forward / back = 1 m, left / right = 90° turn, return, home; a fetch runs
+  NAVIGATE → ALIGN → GRASP → RETURN → DELIVER and ends at the start position.
+- **One command at a time:** while FIDO is busy, only "fido stop" is accepted.
+- **Hardware:** YOLO, Whisper and Param-1 run on the Intel integrated GPU via OpenVINO, with CPU fallback.
 
-### Run
+### Setup and run
+
+Follow `steps.txt`. In short:
 
 ```
-python multimodal10_updated.py
+python -m venv .venv
+.venv\Scripts\Activate.ps1
+pip install -r requirements.txt
+yolo export model=yolov8n.pt format=openvino
+optimum-cli export openvino --model openai/whisper-base whisper-base-ov
+python export.py
+python test.py
+python fido_mk2.py
 ```
 
-Say e.g. "fido bring me something to drink", "fido go forward", "fido turn left", or "stop" to quit.
+### Voice commands
 
-Model folders (`yolov8n_openvino_model/`, `phi3_openvino_int8/`, `whisper-medium-ov/`) are created
-by the setup script and are not stored in this repository.
+| Say | FIDO does |
+|---|---|
+| fido &lt;your request&gt; | the LLM picks an object in view and FIDO fetches it |
+| fido forward / back | drive 1 m, then wait |
+| fido left / right | turn 90°, then wait |
+| fido return | U-turn and drive back to the start |
+| fido home | go to the start, face forward, reset position |
+| fido stop | cancel the current task (while busy) / shut down (when idle) |
+
+Model folders (`yolov8n_openvino_model/`, `whisper-base-ov/`, `param-1-ov-int4/`) are created by the
+setup steps and are not stored in this repository.

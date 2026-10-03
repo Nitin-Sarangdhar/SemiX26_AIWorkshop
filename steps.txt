@@ -1,0 +1,61 @@
+FIDO - Installation & Setup Steps
+=================================
+
+Requirements: Python 3.12, internet connection (for model downloads).
+Run all commands from the repository folder.
+
+
+0. Create a virtual environment
+   python -m venv .venv
+
+1. Activate the virtual environment
+   Windows (PowerShell) : .venv\Scripts\Activate.ps1
+   Windows (cmd)        : .venv\Scripts\activate.bat
+   Linux / Mac          : source .venv/bin/activate
+
+   (If PowerShell blocks the script, run once:
+    Set-ExecutionPolicy -Scope CurrentUser RemoteSigned)
+
+2. Install the dependencies
+   pip install -r requirements.txt
+
+3. Install hf_xet (faster Hugging Face downloads)
+   pip install hf_xet
+
+   Disable hf_transfer for the current session:
+   Windows (PowerShell) : $env:HF_HUB_ENABLE_HF_TRANSFER="0"
+   Windows (cmd)        : set HF_HUB_ENABLE_HF_TRANSFER=0
+   Linux / Mac          : export HF_HUB_ENABLE_HF_TRANSFER=0
+
+   Optional (Windows only): Disable Smart App Control
+   Press the Windows key, search for "Smart App Control" and turn it off.
+   (It can block the OpenVINO / native libraries from loading.)
+
+4. Export the YOLOv8 model to OpenVINO
+   yolo export model=yolov8n.pt format=openvino
+
+5. Export the Whisper speech model to OpenVINO
+   optimum-cli export openvino --model openai/whisper-base whisper-base-ov
+
+6. Export the language model
+   python export.py
+
+7. Test the setup
+   python test.py
+
+8. Run FIDO (opens the HUD window)
+   python fido_mk2.py
+
+   The first run downloads the Silero voice-activity model, so it needs internet.
+   Close the HUD window or press Q / Esc to quit.
+
+   Voice commands (every command starts with "fido", or "hey fido"):
+     fido <your request>    the LLM picks an object in view and FIDO fetches it
+                            e.g. "fido i am thirsty", "fido i want to call someone"
+     fido forward / back    drive 1 m, then wait
+     fido left / right      turn 90 degrees, then wait
+     fido return            U-turn and drive back to the start
+     fido home              go to the start, face forward, reset position
+     fido stop              cancel the current task (while busy) / shut down (when idle)
+
+   While FIDO is busy, only "fido stop" is accepted.
