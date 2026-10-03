@@ -1,35 +1,41 @@
-Write-Host "--- FIDO AIPC SETUP (8GB RAM OPTIMIZED) ---" -ForegroundColor Cyan
+Write-Host "--- FIDO AIPC SETUP (v2) ---" -ForegroundColor Cyan
 
 # 1. Environment Initialization
-Write-Host "[1/6] Creating Virtual Environment..." -ForegroundColor Yellow
+Write-Host "[1/7] Creating Virtual Environment..." -ForegroundColor Yellow
 python -m venv fido_env
 . .\fido_env\Scripts\Activate.ps1
 python -m pip install --upgrade pip setuptools wheel
 
 # 2. Core AI Stack (2026.1 Release)
-Write-Host "[2/6] Installing OpenVINO GenAI & Ultralytics..." -ForegroundColor Yellow
+Write-Host "[2/7] Installing OpenVINO GenAI & Ultralytics..." -ForegroundColor Yellow
 python -m pip install "openvino>=2026.1.0" "openvino-genai>=2026.1.0"
 python -m pip install ultralytics --no-cache-dir
 
 # 3. Hardware Interfacing & Logic
-Write-Host "[3/6] Installing NPU Handlers & Audio Libraries..." -ForegroundColor Yellow
+Write-Host "[3/7] Installing NPU Handlers & Audio Libraries..." -ForegroundColor Yellow
 # 'optimum-intel' is mandatory for NPU device detection
 python -m pip install "optimum-intel[openvino]" sounddevice scipy opencv-python
 
-# 4. VISION SETUP (YOLOv8)
+# 4. NEW in v2: PyTorch (CPU build) for the Silero voice-activity detector
+# Silero VAD itself is downloaded automatically (torch.hub) the first time multimodal10_updated.py runs,
+# so the first run needs an internet connection.
+Write-Host "[4/7] Installing PyTorch for Silero VAD..." -ForegroundColor Yellow
+python -m pip install torch --index-url https://download.pytorch.org/whl/cpu
+
+# 5. VISION SETUP (YOLOv8)
 # Automatically downloads weights and exports to OpenVINO folder
-Write-Host "[4/6] Exporting YOLOv8 Vision Model..." -ForegroundColor Yellow
+Write-Host "[5/7] Exporting YOLOv8 Vision Model..." -ForegroundColor Yellow
 yolo export model=yolov8n.pt format=openvino
 
-# 5. COGNITION SETUP (Phi-3)
+# 6. COGNITION SETUP (Phi-3)
 # Downloads and compresses the 'Brain' to 8-bit to save RAM
-Write-Host "[5/6] Exporting Phi-3 Brain to INT8..." -ForegroundColor Yellow
+Write-Host "[6/7] Exporting Phi-3 Brain to INT8..." -ForegroundColor Yellow
 optimum-cli export openvino --model microsoft/Phi-3-mini-4k-instruct --task text-generation-with-past --weight-format int8 phi3_openvino_int8/
 
-# 6. PERCEPTION SETUP (Whisper)
-# Downloads official Intel-built Whisper for GenAI compatibility (Fixes beam_idx error)
-Write-Host "[6/6] Downloading Official Whisper-Tiny for NPU..." -ForegroundColor Yellow
-huggingface-cli download OpenVINO/whisper-tiny-fp16-ov --local-dir whisper-tiny-ov
+# 7. PERCEPTION SETUP (Whisper)
+# CHANGED in v2: Whisper-medium (more accurate than Whisper-tiny) exported to OpenVINO
+Write-Host "[7/7] Exporting Whisper-Medium Speech Model..." -ForegroundColor Yellow
+optimum-cli export openvino --model openai/whisper-medium whisper-medium-ov
 
 Write-Host "--- SETUP COMPLETE ---" -ForegroundColor Green
-Write-Host "You can now run 'python multimodal10.py' or 'python brain_int8.py'" -ForegroundColor White
+Write-Host "You can now run 'python multimodal10_updated.py'" -ForegroundColor White

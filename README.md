@@ -4,24 +4,34 @@ FIDO is a voice-controlled "fetch" robot demo that runs entirely on an Intel AI 
 OpenVINO: it listens for a spoken command, looks through the camera, and uses a small
 language model to decide which visible object to bring.
 
-## Version 1.0 - original code
+## Versions
+
+Each version is a tagged commit - browse older ones under **Tags** (or `git checkout v1.0`).
+
+| Tag | Main program | What changed |
+|---|---|---|
+| v1.0 | `multimodal10.py` + `brain_Int8.py` | Original code |
+| **v2.0** (this) | `multimodal10_updated.py` | One program: continuous camera + YOLO, Silero voice detection, Whisper-medium, Phi-3 decides using recently seen objects, task queue |
+
+## Version 2.0
 
 | File | Purpose |
 |---|---|
-| `installation_instructions_new1.txt` | PowerShell setup script: creates the environment, installs OpenVINO / Ultralytics, exports YOLOv8n, Phi-3-mini (INT8) and Whisper-tiny |
-| `multimodal10.py` | Speech (Whisper-tiny) + vision (YOLOv8n). Moves on "fido forward / back / left / right"; on "fetch ..." it captures a frame and writes the command and the detected objects to `fido_senses.json` |
-| `brain_Int8.py` | Reads `fido_senses.json` and asks Phi-3-mini (INT8, CPU) which of the seen objects fits the command |
+| `installation_instructions_new1.txt` | PowerShell setup script, updated for v2: adds PyTorch (Silero VAD) and exports Whisper-medium instead of Whisper-tiny |
+| `multimodal10_updated.py` | Speech (Whisper-medium + Silero VAD), live camera with YOLOv8n, 30-second object memory, Phi-3-mini (INT8) picks the object for a fetch request |
 
 ### Setup
 
 Run the commands in `installation_instructions_new1.txt` in PowerShell, from the repository folder.
+The first run of `multimodal10_updated.py` downloads Silero VAD, so it needs internet.
 
 ### Run
 
 ```
-python multimodal10.py     # speak a command, e.g. "fetch something to drink"
-python brain_Int8.py       # Phi-3 picks the object from fido_senses.json
+python multimodal10_updated.py
 ```
 
-Model folders (`yolov8n_openvino_model/`, `phi3_openvino_int8/`, `whisper-tiny-ov/`) are created
+Say e.g. "fido bring me something to drink", "fido go forward", "fido turn left", or "stop" to quit.
+
+Model folders (`yolov8n_openvino_model/`, `phi3_openvino_int8/`, `whisper-medium-ov/`) are created
 by the setup script and are not stored in this repository.
