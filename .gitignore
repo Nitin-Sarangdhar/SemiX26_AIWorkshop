@@ -12,7 +12,11 @@ phi3_openvino_int8/
 whisper-*-ov/
 param-1-local/
 param-1-ov-int4/
+qwen2.5-*/
 ov_cache/
+
+# Hugging Face download cache (created by the setup script)
+.cache/
 
 # Files written at runtime
 fido_senses.json

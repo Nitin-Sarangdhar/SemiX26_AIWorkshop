@@ -1,5 +1,5 @@
 """
-FIDO — Embodied Cognitive Operating System
+FIDO Mk3 — Embodied Cognitive Operating System (Qwen2.5-0.5B-Instruct brain)
 ================================================
 
 Features
@@ -9,7 +9,7 @@ Features
 ✓ Persistent live camera & YOLOv8n OpenVINO tracking (Intel iGPU)
 ✓ Live detections only (the LLM sees objects detected in the last 1 s, no long-term memory)
 ✓ One command at a time: while busy only "fido stop" is accepted (cancels the task), nothing is queued
-✓ Param-1 Reasoning (spoken command sent verbatim, LLM picks from detected objects, Intel iGPU)
+✓ Qwen2.5-0.5B-Instruct Reasoning (spoken command sent verbatim, LLM picks from detected objects, Intel iGPU)
 ✓ Discrete motion: forward/back = 1 m, left/right = 90° turn, return = U-turn + drive back to start
 ✓ Fetch missions: NAVIGATE → ALIGN → GRASP → RETURN → DELIVER
 ✓ Live HUD (camera view, target lock, motors, odometry, gripper, mission steps, brain, in-view objects, activity log)
@@ -223,11 +223,13 @@ def tokenize(text):
 # ============================================================================
 
 class FidoBrain:
-    def __init__(self, model_path="param-1-ov-int4/", device=IGPU):
+    MODEL_NAME = "Qwen2.5-0.5B-Instruct"
+
+    def __init__(self, model_path="qwen2.5-0.5b-instruct-ov/", device=IGPU):
         self.pipe = None
         self.device = "OFFLINE"
         for dev in dict.fromkeys([device, "CPU"]):
-            print(f"[Brain] Loading Param-1 on {dev}...")
+            print(f"[Brain] Loading {self.MODEL_NAME} on {dev}...")
             try:
                 self.pipe = ov_genai.LLMPipeline(model_path, dev)
                 self._warmup()
@@ -239,7 +241,7 @@ class FidoBrain:
                 self.pipe = None
 
     def _generate(self, prompt, max_new_tokens=12):
-        # Prompt is already in Param-1's ChatML format
+        # Prompt is already in Qwen's ChatML format
         return self.pipe.generate(
             prompt, max_new_tokens=max_new_tokens, do_sample=False, apply_chat_template=False
         )
@@ -870,7 +872,7 @@ class CognitiveOrchestrator:
                 return
 
             if decision is None:
-                print(f"[OS] Mission Aborted: Param-1 chose nothing for '{description}' (in view: {', '.join(known_objects)})")
+                print(f"[OS] Mission Aborted: the LLM chose nothing for '{description}' (in view: {', '.join(known_objects)})")
                 self.world.mission_phase = "ABORTED: NO MATCH"
                 return
 
@@ -1251,7 +1253,7 @@ class FidoHUD:
     def _brain(self, img, world):
         x, y, w, h = self.RX, 358, 432, 196
         self._panel(img, x, y, w, h, "BRAIN")
-        self._text(img, f"param-1-ov-int4 @ {self.llm_device}", x + 140, y + 16, 0.4, self.DIM)
+        self._text(img, f"qwen2.5-0.5b-instruct @ {self.llm_device}", x + 140, y + 16, 0.4, self.DIM)
 
         phase = world.mission_phase
         pcol = self.WARN if phase in ("THINKING", "SCANNING", "LOOKING") or phase.startswith("FETCHING") \
